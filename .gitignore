@@ -1,0 +1,17 @@
+# Built / generated
+.gradle/
+build/
+/local.properties
+/idea
+.idea/
+*.iml
+.DS_Store
+captures/
+.externalNativeBuild
+.cxx
+local.properties
+*.keystore
+*.jks
+# downloaded reference artifacts must never be committed
+*.apk
+*.bin
