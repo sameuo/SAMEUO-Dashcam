@@ -7,40 +7,46 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val DarkColors = darkColorScheme(
-    primary = Amber,
-    onPrimary = BgDark,
-    secondary = Teal,
-    onSecondary = BgDark,
-    background = BgDark,
-    onBackground = OnDark,
-    surface = SurfaceDark,
-    onSurface = OnDark,
-    surfaceVariant = SurfaceVariantDark,
-    onSurfaceVariant = OnDarkMuted,
-    error = Danger,
+    primary = SameuoRed,
+    onPrimary = White,
+    primaryContainer = SameuoRedDark,
+    onPrimaryContainer = White,
+    secondary = SameuoRedBright,
+    background = Black950,
+    onBackground = White,
+    surface = Black900,
+    onSurface = White,
+    surfaceVariant = Black800,
+    onSurfaceVariant = Grey300,
+    surfaceContainer = Black850,
+    outline = Grey500,
+    error = SameuoRedBright,
 )
 
 private val LightColors = lightColorScheme(
-    primary = AmberDeep,
-    onPrimary = SurfaceLight,
-    secondary = Teal,
-    onSecondary = BgDark,
-    background = BgLight,
-    onBackground = OnLight,
-    surface = SurfaceLight,
-    onSurface = OnLight,
-    surfaceVariant = SurfaceVariantLight,
-    onSurfaceVariant = OnLightMuted,
-    error = Danger,
+    primary = SameuoRed,
+    onPrimary = White,
+    primaryContainer = SameuoRedDark,
+    onPrimaryContainer = White,
+    secondary = SameuoRed,
+    background = LightBg,
+    onBackground = LightText,
+    surface = LightSurface,
+    onSurface = LightText,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = LightTextSecondary,
+    outline = LightTextSecondary,
+    error = SameuoRed,
 )
 
 /**
- * @param darkTheme null = follow system; SAMEUO defaults callers to dark (handlebar legibility).
+ * @param dark null = follow system; otherwise forced dark/light (Appearance setting).
  */
 @Composable
-fun SameuoTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+fun SameuoTheme(dark: Boolean? = null, content: @Composable () -> Unit) {
+    val useDark = dark ?: isSystemInDarkTheme()
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = if (useDark) DarkColors else LightColors,
         typography = SameuoTypography,
         content = content,
     )
