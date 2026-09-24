@@ -354,7 +354,8 @@ private fun RouteMapPanel() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp)\u0003.padding(horizontal = 16.dp, vertical = 6.dp)
+            .height(72.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface),
         contentAlignment = Alignment.Center,
