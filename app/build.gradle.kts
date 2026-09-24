@@ -82,10 +82,10 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
 
     // Media3 (ExoPlayer + RTSP live view + local playback)
-    implementation(libs.media3.exoplayer)
-    implementation(libs.media3.exoplayer.rtsp)
-    implementation(libs.media3.ui)
-    implementation(libs.media3.common)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.exoplayer.rtsp)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.common)
 
     // Image loading (thumbnails)
     implementation(libs.coil.compose)
