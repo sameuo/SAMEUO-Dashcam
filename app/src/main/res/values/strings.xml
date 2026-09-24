@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SAMEUO</string>
-    <string name="download_channel_name">Device downloads</string>
-    <string name="download_channel_desc">Fetching videos and photos from the dashcam</string>
+    <string name="download_channel_name">SAMEUO Downloads</string>
+    <string name="download_channel_desc">Downloading files from the camera</string>
 </resources>

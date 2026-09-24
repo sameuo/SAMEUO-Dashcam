@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base XML theme; the real visual styling is done in Compose (ui/theme).
-         No AppCompat / Material Components dependency required. -->
-    <style name="Theme.SAMEUO" parent="@android:style/Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/brand_night</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
+    <style name="Theme.Sameuo" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/sameuo_black</item>
+        <item name="android:statusBarColor">@color/sameuo_black</item>
+        <item name="android:navigationBarColor">@color/sameuo_black</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>
