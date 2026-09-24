@@ -55,18 +55,17 @@ class SettingsViewModel : ViewModel() {
     private fun syncFromDevice() {
         if (!connected) return
         viewModelScope.launch {
-            // Map the device's current menu indices onto our defs.
-            when (val r = ServiceLocator.device.refreshMenu()) {
-                is Outcome.Ok -> {
-                    val byCmd = r.value.items.associateBy({ it.cmd }, { it.currentIndex })
-                    _selections.value = _selections.value.toMutableMap().apply {
-                        defs.forEach { d ->
-                            val cur = d.cmd?.let { byCmd[it] }
-                            if (cur != null && cur >= 0) put(d.key, cur)
-                        }
-                    }
-                }
-                is Outcome.Err -> Unit
+            // Best-effort schema refresh (3031 + 3014 inside the client).
+            runCatching { ServiceLocator.device.refreshMenu() }
+            // Authoritative current values: query each setting command directly.
+            val updates = mutableMapOf<String, Int>()
+            defs.forEach { d ->
+                val cmd = d.cmd ?: return@forEach
+                val cur = ServiceLocator.device.queryCurrentIndex(cmd)
+                if (cur != null && cur >= 0) updates[d.key] = cur
+            }
+            if (updates.isNotEmpty()) {
+                _selections.value = _selections.value + updates
             }
         }
     }
@@ -128,52 +127,25 @@ class SettingsViewModel : ViewModel() {
             def(
                 "video_resolution", "Video Resolution", SettingGroup.VIDEO, WifiCmd.MOVIE_REC_SIZE,
                 listOf(
-                    SettingOption(0, "3840×2160 4K UHD"),
-                    SettingOption(1, "P30 2560×1440"),
-                    SettingOption(2, "1080FHD 1920×1080"),
-                    SettingOption(3, "720P 1280×720"),
-                    SettingOption(4, "WVGA 848×480"),
-                    SettingOption(5, "VGA 640×480"),
+                    SettingOption(0, "P30 2560×1440"),
+                    SettingOption(1, "FHD 1920×1080"),
                 ),
-                defaultIndex = 1,
+                defaultIndex = 0,
             ),
             def(
                 "video_record_loop", "Video Record Loop", SettingGroup.VIDEO, WifiCmd.CYCLIC_REC,
                 listOf(
                     SettingOption(0, "Off"),
                     SettingOption(1, "1 min"),
-                    SettingOption(2, "3 min"),
-                    SettingOption(3, "5 min"),
-                    SettingOption(4, "10 min"),
+                    SettingOption(2, "2 min"),
+                    SettingOption(3, "3 min"),
+                    SettingOption(4, "5 min"),
+                    SettingOption(5, "10 min"),
                 ),
                 defaultIndex = 0,
             ),
             toggle("audio_recording", "Audio Recording", SettingGroup.VIDEO, WifiCmd.MOVIE_AUDIO, true),
             toggle("date_stamp", "Date Stamp", SettingGroup.VIDEO, WifiCmd.DATE_IMPRINT, true),
-            def(
-                "photo_resolution", "Photo Resolution", SettingGroup.VIDEO, WifiCmd.CAPTURE_SIZE,
-                listOf(
-                    SettingOption(0, "12M"),
-                    SettingOption(1, "10M"),
-                    SettingOption(2, "8M"),
-                    SettingOption(3, "5M"),
-                    SettingOption(4, "3M"),
-                    SettingOption(5, "2M"),
-                    SettingOption(6, "VGA"),
-                ),
-                defaultIndex = 3,
-            ),
-            def(
-                "exposure", "Exposure Setting", SettingGroup.VIDEO, WifiCmd.MOVIE_EV,
-                listOf(
-                    SettingOption(0, "+2.0"), SettingOption(1, "+1.7"), SettingOption(2, "+1.3"),
-                    SettingOption(3, "+1.0"), SettingOption(4, "+0.7"), SettingOption(5, "+0.3"),
-                    SettingOption(6, "0"), SettingOption(7, "-0.3"), SettingOption(8, "-0.7"),
-                    SettingOption(9, "-1.0"), SettingOption(10, "-1.3"), SettingOption(11, "-1.7"),
-                    SettingOption(12, "-2.0"),
-                ),
-                defaultIndex = 7,
-            ),
             toggle("wdr", "WDR Wide Dynamic Range", SettingGroup.VIDEO, WifiCmd.MOVIE_HDR_WDR, true),
 
             // ---- Emergency ----
@@ -182,9 +154,9 @@ class SettingsViewModel : ViewModel() {
                 listOf(
                     SettingOption(0, "Off (No Recording)"),
                     SettingOption(1, "Low"),
-                    SettingOption(2, "High"),
+                    SettingOption(3, "High"),
                 ),
-                defaultIndex = 2,
+                defaultIndex = 3,
             ),
             def(
                 "parking_monitor", "Parking Monitor", SettingGroup.EMERGENCY, WifiCmd.PARKING_MONITOR,
@@ -205,16 +177,18 @@ class SettingsViewModel : ViewModel() {
                 "device_language", "Device Language", SettingGroup.DEVICE, WifiCmd.LANGUAGE,
                 listOf(
                     SettingOption(0, "English"),
-                    SettingOption(1, "Spanish"),
-                    SettingOption(2, "Portuguese"),
-                    SettingOption(3, "German"),
-                    SettingOption(4, "Italian"),
-                    SettingOption(5, "French"),
-                    SettingOption(6, "Chinese Simplified"),
-                    SettingOption(7, "Chinese Traditional"),
-                    SettingOption(8, "Russian"),
-                    SettingOption(9, "Japanese"),
-                    SettingOption(10, "Polish"),
+                    SettingOption(1, "French"),
+                    SettingOption(2, "Spanish"),
+                    SettingOption(3, "Portuguese"),
+                    SettingOption(4, "German"),
+                    SettingOption(5, "Italian"),
+                    SettingOption(6, "Russian"),
+                    SettingOption(7, "Chinese Simplified"),
+                    SettingOption(8, "Chinese Traditional"),
+                    SettingOption(9, "Thai"),
+                    SettingOption(10, "Japanese"),
+                    SettingOption(11, "Language 11"),
+                    SettingOption(12, "Vietnamese"),
                 ),
                 defaultIndex = 0,
             ),

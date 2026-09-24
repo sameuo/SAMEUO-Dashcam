@@ -12,6 +12,7 @@ import com.sameuo.dashcam.data.protocol.model.FunctionResult
 import com.sameuo.dashcam.data.protocol.model.OperationMode
 import com.sameuo.dashcam.data.protocol.parser.NovatekXmlParser
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import java.io.File
 
@@ -61,8 +62,14 @@ class NovatekDeviceClient(
     override suspend fun setRecording(start: Boolean) =
         sendCommand(WifiCmd.RECORD, if (start) 1 else 0)
 
-    override suspend fun setLiveView(start: Boolean) =
-        sendCommand(WifiCmd.LIVEVIEW_START, if (start) 1 else 0)
+    override suspend fun setLiveView(start: Boolean): Outcome<FunctionResult> {
+        if (start) switchToMovieMode()
+        // Gen3 routes the preview to the APP screen via cmd 3028.
+        val r = sendCommand(WifiCmd.APP_PREVIEW_SCREEN, if (start) 1 else 0)
+        // Best-effort legacy stream enable (no-op on Gen3).
+        runCatching { sendCommand(WifiCmd.LIVEVIEW_START, if (start) 1 else 0) }
+        return r
+    }
 
     override suspend fun capturePhoto(): Outcome<FunctionResult> =
         // Gen3 uses 2017 for snapshot in live-preview mode; 1001 in photo mode.
@@ -76,14 +83,29 @@ class NovatekDeviceClient(
     override suspend fun getFreeSpaceBytes(): Outcome<Long> =
         sendCommand(WifiCmd.DISK_FREE_SPACE).map { it.value?.toLongOrNull() ?: -1L }
 
-    override suspend fun queryMenu(): Outcome<DeviceMenu> {
-        // 3031 returns the full menu schema; 3014 is the current-status fallback.
-        val first = getString(endpoint.command(WifiCmd.QUERY_MENUITEM).toString())
-        val xml = when (first) {
-            is Outcome.Ok -> first.value
-            is Outcome.Err -> return Outcome.Err(first.cause)
+    override suspend fun queryMenu(): Outcome<DeviceMenu> = coroutineScope {
+        // 3031 = full menu schema.
+        val schema = when (val s = getString(endpoint.command(WifiCmd.QUERY_MENUITEM).toString())) {
+            is Outcome.Ok -> s.value
+            is Outcome.Err -> return@coroutineScope Outcome.Err(s.cause)
         }
-        return Outcome.catching { parser.parseMenu(xml) }
+        val base = parser.parseMenu(schema)
+        // 3014 = current status (per Gen3 note, pairs with 3031).
+        val current3014: Map<Int, Int> = when (
+            val r = getString(endpoint.command(WifiCmd.QUERY_CUR_STATUS).toString())
+        ) {
+            is Outcome.Ok -> parser.parseCurrentStatus(r.value)
+            is Outcome.Err -> emptyMap()
+        }
+        // Per-item current value: issue the set command with no par and read <Value>.
+        val resolved = base.items.map { item ->
+            async {
+                val direct = (sendCommand(item.cmd, null) as? Outcome.Ok)?.value?.value?.toIntOrNull()
+                val cur = direct ?: current3014[item.cmd]
+                if (cur != null) item.copy(currentIndex = cur) else item
+            }
+        }.awaitAll()
+        Outcome.Ok(DeviceMenu(resolved))
     }
 
     override suspend fun queryStatus(): Outcome<DeviceStatus> = coroutineScope {
@@ -115,8 +137,17 @@ class NovatekDeviceClient(
     override suspend fun listFiles(): Outcome<List<DeviceMediaFile>> {
         // File listing is only valid in playback mode on Novatek firmware.
         switchToPlaybackMode()
-        val res = getString(endpoint.command(WifiCmd.FILE_LIST).toString())
-        return res.map { xml -> parser.parseFileList(xml).sortedByDescending { it.timecode } }
+        // Standard Novatek file list is 3015; the Gen3 note also references 4001 in playback.
+        val primary = getString(endpoint.command(WifiCmd.FILE_LIST).toString())
+        val primaryFiles = (primary as? Outcome.Ok)?.value?.let { parser.parseFileList(it) }
+        if (!primaryFiles.isNullOrEmpty()) {
+            return Outcome.Ok(primaryFiles.sortedByDescending { it.timecode })
+        }
+        val alt = getString(endpoint.command(WifiCmd.THUMB).toString())
+        return when (alt) {
+            is Outcome.Ok -> Outcome.Ok(parser.parseFileList(alt.value).sortedByDescending { it.timecode })
+            is Outcome.Err -> if (primary is Outcome.Err) Outcome.Err(primary.cause) else Outcome.Ok(emptyList())
+        }
     }
 
     override suspend fun deleteFile(file: DeviceMediaFile): Outcome<FunctionResult> =
