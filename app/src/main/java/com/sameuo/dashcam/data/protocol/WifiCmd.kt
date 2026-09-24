@@ -54,7 +54,7 @@ object WifiCmd {
     const val SYS_RESET = 3011              // factory reset
     const val VERSION = 3012
     const val FW_UPDATE = 3013
-    const val QUERY_CUR_STATUS = 3014
+    const val QUERY_CUR_STATUS = 3014       // Gen3: current menu/status, pairs with 3031
     const val FILE_LIST = 3015
     const val HEARTBEAT = 3016
     const val DISK_FREE_SPACE = 3017
@@ -68,7 +68,8 @@ object WifiCmd {
     const val GET_DOWNLOAD_URL = 3025       // firmware descriptor
     const val GET_UPDATE_FW_PATH = 3026
     const val UPLOAD_FILE = 3027
-    const val SET_PIP_STYLE = 3028          // dual-camera PIP style (Gen3)
+    const val APP_PREVIEW_SCREEN = 3028     // Gen3: route preview to the APP screen
+    const val SET_PIP_STYLE = 3028          // (alias) legacy PIP naming
     const val GET_SSID_PASSPHRASE = 3029
     const val QUERY_MOVIE_SIZE = 3030
     const val QUERY_MENUITEM = 3031         // full menu schema
@@ -81,7 +82,7 @@ object WifiCmd {
     const val PARKING_MONITOR = 3038        // Gen3 reuses 3038 for parking monitor
 
     // ---- Playback ----
-    const val THUMB = 4001                  // JPG thumbnail, param = file path
+    const val THUMB = 4001                  // JPG thumbnail (str=path); Gen3 note also lists 4001 for playback file list
     const val SCREEN = 4002                 // larger screen-nail JPG
     const val DELETE_ONE = 4003
     const val DELETE_ALL = 4004

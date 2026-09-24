@@ -43,13 +43,25 @@ data class DeviceEndpoint(
         get() = listOf(
             rtsp("live_rtsp"),
             rtsp("live"),
+            rtsp("preview"),
             "rtsp://$host/CH001.sdp",
-            "rtsp://$host/stream1",
-            "rtsp://$host/live.mp4",
+            rtsp("$host/stream1"),
+            rtsp("$host/live.mp4"),
+            "rtsp://$host:8554/live",
+            "rtsp://$host:8554/live_rtsp",
         )
 
     /** Motion-JPEG stream (photo mode), e.g. http://host:8192. */
     fun mjpg(): String = "http://$host:$mjpgPort"
+
+    /** Candidate single-server / multipart MJPEG preview URLs tried after RTSP fails. */
+    val mjpgCandidates: List<String>
+        get() = listOf(
+            mjpg(),
+            "http://$host:$mjpgPort/live.jpg",
+            "http://$host/live.jpg",
+            "http://$host/live",
+        )
 
     /**
      * Convert a device file path (A:\NOVATEK\MOVIE\xxx.MOV) to an HFS download URL.

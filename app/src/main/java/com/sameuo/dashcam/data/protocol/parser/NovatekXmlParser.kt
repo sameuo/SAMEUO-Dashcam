@@ -156,6 +156,43 @@ class NovatekXmlParser {
         return DeviceMenu(items)
     }
 
+    /**
+     * Best-effort parse of cmd 3014 "current status" into cmd -> current enum.
+     * Tolerates both `<Item><Cmd>x</Cmd><Value>n</Value></Item>` and flat Cmd/Value pairs.
+     */
+    fun parseCurrentStatus(xml: String): Map<Int, Int> {
+        val out = linkedMapOf<Int, Int>()
+        val pp = newParser(xml)
+        var lastCmd = -1
+        var e = pp.eventType
+        while (e != XmlPullParser.END_DOCUMENT) {
+            when (e) {
+                XmlPullParser.START_TAG -> {
+                    val t = pp.name.uppercase()
+                    if (t == "ITEM") lastCmd = -1
+                }
+                XmlPullParser.TEXT -> {
+                    val t = pp.text?.trim().orEmpty()
+                    when (val tag = pp.name?.uppercase().orEmpty()) {
+                        "CMD" -> {
+                            val c = t.toIntOrNull() ?: -1
+                            if (c > 0 && c != 3014) lastCmd = c
+                        }
+                        "VALUE", "PAR" -> {
+                            val v = t.toIntOrNull()
+                            if (lastCmd > 0 && v != null) out[lastCmd] = v
+                        }
+                    }
+                }
+                XmlPullParser.END_TAG -> {
+                    if (pp.name.uppercase() == "ITEM") lastCmd = -1
+                }
+            }
+            e = pp.next()
+        }
+        return out
+    }
+
     /** Parse <DownloadDesc><FilePath/><Version/><CheckMethord/><CheckValue/></DownloadDesc>. */
     fun parseFirmware(xml: String): FirmwareInfo? {
         var url = ""; var ver = ""; var method = "none"; var value = "0"
@@ -188,8 +225,7 @@ class NovatekXmlParser {
             return when {
                 s.contains("FRONT") || s.contains("_F.") || s.contains("\\F\\") || s.contains("/F/") ||
                     s.contains("CAM1") || s.contains("CH1") -> CameraChannel.FRONT
-                s.contains("REAR") || s.contains("BACK") || s.contains("_B.") || s.contains("\\B\\") ||
-                    s.contains("/B/") || s.contains("CAM2") || s.contains("CH2") -> CameraChannel.REAR
+                s.contains("REAR") || s.contains("BACK") || s.contains("_B.") || s.contains("\\B\\") || s.contains("/B/") || s.contains("CAM2") || s.contains("CH2") -> CameraChannel.REAR
                 else -> CameraChannel.UNKNOWN
             }
         }

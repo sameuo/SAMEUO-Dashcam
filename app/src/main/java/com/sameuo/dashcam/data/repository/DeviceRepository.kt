@@ -50,6 +50,10 @@ class DeviceRepository(private val connection: ConnectionRepository) {
     suspend fun setEnum(cmd: Int, par: Int) = client()?.sendCommand(cmd, par)
         ?: Outcome.Err(com.sameuo.dashcam.core.Cause.NotConnected())
 
+    /** Read a setting's current enum by issuing its command with no par (<Value>). */
+    suspend fun queryCurrentIndex(cmd: Int): Int? =
+        (client()?.sendCommand(cmd, null) as? Outcome.Ok)?.value?.value?.toIntOrNull()
+
     suspend fun setString(cmd: Int, str: String) = client()?.sendStringCommand(cmd, str)
         ?: Outcome.Err(com.sameuo.dashcam.core.Cause.NotConnected())
 
